@@ -12,17 +12,13 @@ __all__ = [
 class Entry(BaseModel):
     __tablename__ = 'entry'
 
+    id = Column(types.Integer, primary_key=True)
     timestamp = Column(types.DateTime, default=datetime.now, nullable=False)
 
     tag = Column(types.String(128), index=True)
     value = Column(types.UnicodeText)
 
     type = Column(mytypes.Enum(['start', 'stop', 'duration'], strict=False), nullable=True)
-
-    __table_args__ = (
-        PrimaryKeyConstraint('timestamp', 'tag', 'type'),
-        {}
-    )
 
     def __str__(self):
         tagname = self.tag

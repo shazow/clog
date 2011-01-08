@@ -44,15 +44,16 @@ def add_entry(options, args):
 
     if tag_type == 'stop':
         # Find the last 'start' tag of that type
-        last_entry = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
-        time_delta = when-last_entry.timestamp
-        model.Entry.create(timestamp=last_entry.timestamp, tag=tag, type='duration', value=unicode(time_delta.seconds))
+        last_entry = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.id.desc()).first()
+        if last_entry:
+            time_delta = when-last_entry.timestamp
+            model.Entry.create(timestamp=last_entry.timestamp, tag=tag, type='duration', value=unicode(time_delta.seconds))
 
     Session.commit()
 
 
 def view_recent(options, args):
-    r = Session.query(model.Entry).all()
+    r = Session.query(model.Entry).order_by(model.Entry.id.desc()).limit(10).all()
     for entry in r:
         print entry
 
@@ -72,6 +73,7 @@ def main():
         log.setLevel(logging.INFO)
 
     db_path = path.expanduser('~/.clog/db.sqlite')
+    db_path = ":memory:"
 
     # FIXME: Use a real db
     engine = create_engine("sqlite:///" + db_path)
