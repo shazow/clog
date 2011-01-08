@@ -42,9 +42,9 @@ Track your sleep:
     2011-01-08 07:19:29	sleep:stop	
     2011-01-07 23:19:23	sleep:duration	28805
 
-The :duration tag gets inserted automatically when a :start tag is closed with :stop tag.
+The `:duration` tag gets inserted automatically when a `:start` tag is closed with `:stop` tag.
 
-Forgot to log your 1 hour workout this morning? Insert duration retroactively.
+Forgot to log your 1 hour workout this morning? Insert duration retroactively:
 
     $ clog --timestamp="today 11am" workout:duration 1 hour
     $ clog
@@ -52,7 +52,7 @@ Forgot to log your 1 hour workout this morning? Insert duration retroactively.
     2011-01-07 11:00:00	workout:duration	3599
     2011-01-07 11:59:59	workout:stop
 
-Query your clog
+Query your clog:
 
     $ clog --filter workout:duration
     2011-01-07 11:00:00	workout:duration	3599
@@ -69,31 +69,3 @@ Query your clog
     2011-01-06 11:00:00	food	Lunch: Indian
     2011-01-06 19:00:00	food	Dinner: Stew
 
-
-## Roadmap
-
-### Step 1 (Complete)
-
-* Build a simple command-line tool for logging things.
-
-      Usage: clog [OPTIONS] TAG [VALUE]
-
-      OPTIONS include:
-      --timestamp TIME    Can be an ISO timestamp, or relative human time.
-
-Each time you enter a clog, it generates a timestamped entry in the database.
-
-* Tag hooks
-
-      At 1am:
-      $ clog sleep:start Feeling exhausted
-
-      At 9am
-      $ clog sleep:stop
-
-      Hook generates entry equivalent of
-      $ clog --timestamp "8 hours ago" sleep
-
-### Step 2.
-
-Build a web frontend that visualizes data from your logs, with good import/export functionality.
