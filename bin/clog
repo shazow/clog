@@ -16,11 +16,12 @@ Session = model.Session
 
 from os import path
 from sqlalchemy import create_engine
-from parsedatetime import parsedatetime
+from parsedatetime import parsedatetime, parsedatetime_consts
 from datetime import datetime
 
 def human_time_to_datetime(s):
-    cal = parsedatetime.Calendar()
+    const = parsedatetime_consts.Constants()
+    cal = parsedatetime.Calendar(const)
     t, _ = cal.parse(s)
     return datetime(*t[:6])
 
@@ -43,13 +44,16 @@ def add_entry(options, args):
     if tag_type == 'duration':
         # Create corresponding :start and :stop entries based on where `when` is completion time
         # and `value` is duration.
-        when_stop = human_time_to_datetime(value)
-        delta = when_stop - when
-        when_start = when - delta
 
-        e1 = model.Entry.create(timestamp=when_start, tag=tag, type='start')
-        e2 = model.Entry.create(timestamp=when_start, tag=tag, type='duration', value=unicode(delta.seconds))
-        e3 = model.Entry.create(timestamp=when, tag=tag, type='stop')
+        # Normalize relative times
+        now = datetime.now()
+        when_stop = human_time_to_datetime(value)
+        delta = when_stop - now
+        when_stop = when + delta
+
+        e1 = model.Entry.create(timestamp=when, tag=tag, type='start')
+        e2 = model.Entry.create(timestamp=when, tag=tag, type='duration', value=unicode(delta.seconds))
+        e3 = model.Entry.create(timestamp=when_stop, tag=tag, type='stop')
     else:
         e = model.Entry.create(timestamp=when, tag=tag, type=tag_type, value=value and unicode(value))
 
