@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+"""
+Command Log. Or Captain's Log.
+"""
+import sys
+import time
+
+import logging
+log = logging.getLogger(__name__)
+
+from optparse import OptionParser, OptionGroup
+
+from clog import model
+Session = model.Session
+
+
+from os import path
+from sqlalchemy import create_engine
+from parsedatetime import parsedatetime
+from datetime import datetime
+
+def human_time_to_datetime(s):
+    cal = parsedatetime.Calendar()
+    t, _ = cal.parse(s)
+    return datetime(*t[:6])
+
+
+def add_entry(options, args):
+    when = datetime.now()
+    if options.timestamp:
+        when = human_time_to_datetime(options.timestamp)
+
+    tag = args[0]
+    tag_type = None
+
+    if ':' in tag:
+        tag, tag_type = tag.split(':', 1)
+
+    value = None
+    if len(args) > 1:
+        value = ' '.join(args[1:])
+
+    model.Entry.create(timestamp=when, tag=tag, type=tag_type, value=unicode(value))
+
+    if tag_type == 'stop':
+        # Find the last 'start' tag of that type
+        last_entry = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
+        time_delta = when-last_entry.timestamp
+        model.Entry.create(timestamp=last_entry.timestamp, tag=tag, type='duration', value=unicode(time_delta.seconds))
+
+    Session.commit()
+
+
+def view_recent(options, args):
+    r = Session.query(model.Entry).all()
+    for entry in r:
+        print entry
+
+def main():
+    usage="%prog [OPTIONS] TAG [VALUE]\n" + __doc__
+
+    # FIXME: Use argparse someday
+    parser = OptionParser(usage)
+    parser.add_option("--verbose", "-v", dest="verbose", action="count", help="Enable verbose output. Use twice to enable debug output.")
+    parser.add_option("--timestamp", dest="timestamp", metavar="DATETIME", help="Date and time, absolute or relative human format.")
+
+    options, args = parser.parse_args()
+
+    if options.verbose > 1:
+        log.setLevel(logging.DEBUG)
+    elif options.verbose > 0:
+        log.setLevel(logging.INFO)
+
+    db_path = path.expanduser('~/.clog/db.sqlite')
+
+    # FIXME: Use a real db
+    engine = create_engine("sqlite:///" + db_path)
+    model.init_model(engine)
+    model.metadata.create_all(bind=engine)
+
+    if args:
+        return add_entry(options, args)
+    else:
+        return view_recent(options, args)
+
+
+if __name__ == '__main__':
+    log_handler = logging.StreamHandler()
+    log_handler.setFormatter(logging.Formatter('%(levelname)-8s %(message)s'))
+    log.addHandler(log_handler)
+
+    n = main()
+    if n:
+        sys.exit(n)
