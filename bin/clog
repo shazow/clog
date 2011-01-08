@@ -40,7 +40,18 @@ def add_entry(options, args):
     if len(args) > 1:
         value = ' '.join(args[1:])
 
-    model.Entry.create(timestamp=when, tag=tag, type=tag_type, value=unicode(value))
+    if tag_type == 'duration':
+        # Create corresponding :start and :stop entries based on where `when` is completion time
+        # and `value` is duration.
+        when_stop = human_time_to_datetime(value)
+        delta = when_stop - when
+        when_start = when - delta
+
+        e1 = model.Entry.create(timestamp=when_start, tag=tag, type='start')
+        e2 = model.Entry.create(timestamp=when_start, tag=tag, type='duration', value=unicode(delta.seconds))
+        e3 = model.Entry.create(timestamp=when, tag=tag, type='stop')
+    else:
+        e = model.Entry.create(timestamp=when, tag=tag, type=tag_type, value=value and unicode(value))
 
     if tag_type == 'stop':
         # Find the last 'start' tag of that type
@@ -51,19 +62,56 @@ def add_entry(options, args):
 
     Session.commit()
 
+def export_json_entries(options, args):
+    q = Session.query(model.Entry)
+    print "[",
+    for i, entry in enumerate(q):
+        if i>0:
+            print ",",
+        print entry.__json__(),
+    print "]"
+
+def import_json_entries(options, args):
+    import sys, json
+    o = json.load(sys.stdin)
+
+    for entry_dict in o:
+        entry_dict = dict((str(k), v) for k,v in entry_dict.iteritems())
+        entry_dict['timestamp'] = datetime.strptime(entry_dict['timestamp'], '%Y-%m-%d %H:%M:%S')
+        model.Entry.create(**entry_dict)
+
+    Session.commit()
 
 def view_recent(options, args):
-    r = Session.query(model.Entry).order_by(model.Entry.id.desc()).limit(10).all()
-    for entry in r:
+    q = Session.query(model.Entry)
+    if options.filter:
+        tag_name, tag_type = options.filter, None
+        if ':' in tag_name:
+            tag_name, tag_type = tag_name.split(':', 1)
+
+        if tag_name:
+            q = q.filter_by(tag=tag_name)
+
+        if tag_type:
+            q = q.filter_by(type=tag_type)
+
+    r = q.order_by(model.Entry.id.desc()).limit(10).all()
+    for entry in reversed(r):
         print entry
 
 def main():
-    usage="%prog [OPTIONS] TAG [VALUE]\n" + __doc__
+    usage="%prog [OPTIONS] [TAG [VALUE]]\n" + __doc__
 
     # FIXME: Use argparse someday
     parser = OptionParser(usage)
+    parser.add_option("--export-json", dest="export_json", action="store_true", help="Export data into a list of JSON objects to STDOUT.")
+    parser.add_option("--import-json", dest="import_json", action="store_true", help="Import data from a list of JSON objects from STDIN.")
+    parser.add_option("--filter", dest="filter", metavar="TAG", help="Filter clog entries by tag.")
     parser.add_option("--verbose", "-v", dest="verbose", action="count", help="Enable verbose output. Use twice to enable debug output.")
-    parser.add_option("--timestamp", dest="timestamp", metavar="DATETIME", help="Date and time, absolute or relative human format.")
+
+    tag_group = OptionGroup(parser, "TAG")
+    tag_group.add_option("--timestamp", dest="timestamp", metavar="TIMESTAMP", help="Date and time, absolute or relative human format. Examples: 1985-11-30 12:00:00, 2pm, nov 30")
+    parser.add_option_group(tag_group)
 
     options, args = parser.parse_args()
 
@@ -73,12 +121,16 @@ def main():
         log.setLevel(logging.INFO)
 
     db_path = path.expanduser('~/.clog/db.sqlite')
-    db_path = ":memory:"
 
     # FIXME: Use a real db
     engine = create_engine("sqlite:///" + db_path)
     model.init_model(engine)
     model.metadata.create_all(bind=engine)
+
+    if options.export_json:
+        return export_json_entries(options, args)
+    elif options.import_json:
+        return import_json_entries(options, args)
 
     if args:
         return add_entry(options, args)
