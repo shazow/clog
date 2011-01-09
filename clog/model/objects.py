@@ -25,7 +25,7 @@ class Entry(BaseModel):
         if self.type:
             tagname += ':' + self.type
         timestamp = self.timestamp.strftime('%Y-%m-%d %H:%M:%S')
-        return "{0}\t{1}\t{2}".format(timestamp, tagname, self.value or '')
+        return "%s\t%s\t%s" % (timestamp, tagname, self.value or '')
 
 Index('entry_tag_idx',
       Entry.tag,
