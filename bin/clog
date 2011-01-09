@@ -13,7 +13,12 @@ from optparse import OptionParser, OptionGroup
 from clog import model
 Session = model.Session
 
+try:
+    import json
+except ImportError, e:
+    import simplejson as json
 
+import sys
 from os import path
 from sqlalchemy import create_engine
 from parsedatetime import parsedatetime, parsedatetime_consts
@@ -76,7 +81,6 @@ def export_json_entries(options, args):
     print "]"
 
 def import_json_entries(options, args):
-    import sys, json
     o = json.load(sys.stdin)
 
     for entry_dict in o:

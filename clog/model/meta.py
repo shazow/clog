@@ -51,7 +51,10 @@ class _Base(object):
 
 BaseModel = declarative_base(metadata=metadata, cls=_Base)
 
-import json
+try:
+    import json
+except ImportError, e:
+    import simplejson as json
 
 class SchemaEncoder(json.JSONEncoder):
     def default(self, obj):
