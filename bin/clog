@@ -19,7 +19,7 @@ except ImportError, e:
     import simplejson as json
 
 import sys
-from os import path
+import os
 from sqlalchemy import create_engine
 from parsedatetime import parsedatetime, parsedatetime_consts
 from datetime import datetime
@@ -128,10 +128,14 @@ def main():
     elif options.verbose > 0:
         log.setLevel(logging.INFO)
 
-    db_path = path.expanduser('~/.clog/db.sqlite')
+    db_path = os.path.expanduser('~/.clog')
+    try:
+        os.mkdir(db_path)
+    except OSError, e:
+        # Already exists
+        pass
 
-    # FIXME: Use a real db
-    engine = create_engine("sqlite:///" + db_path)
+    engine = create_engine("sqlite:///" + db_path + '/db.sqlite')
     model.init_model(engine)
     model.metadata.create_all(bind=engine)
 
