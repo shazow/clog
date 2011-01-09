@@ -104,6 +104,10 @@ def view_recent(options, args):
             q = q.filter_by(type=tag_type)
 
     r = q.order_by(model.Entry.id.desc()).limit(10).all()
+    if not r:
+        print "No entries."
+        return
+
     for entry in reversed(r):
         print entry
 
