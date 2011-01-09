@@ -1,5 +1,5 @@
-from .meta import Session, BaseModel
-from . import types as mytypes
+from clog.model.meta import Session, BaseModel
+from clog.model import types as mytypes
 
 from sqlalchemy import types, Column, Index, PrimaryKeyConstraint
 from datetime import datetime
