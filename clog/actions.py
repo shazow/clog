@@ -58,7 +58,7 @@ def add_entry(options, args):
         delta = when_stop - now
         when_stop = when + delta
 
-        value = delta.seconds + delta.days*60*60*24
+        value = delta.seconds + delta.days*60*60*24 + 1
 
         e1 = model.Entry.create(timestamp=when, tag=tag, type='start')
         e2 = model.Entry.create(timestamp=when, tag=tag, type='duration', value=unicode(value))

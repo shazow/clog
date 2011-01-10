@@ -46,7 +46,7 @@ Track your sleep:
     $ clog
     2011-01-07 23:19:23	sleep:start	Feeling exhausted after shower.
     2011-01-08 07:19:29	sleep:stop	
-    2011-01-07 23:19:23	sleep:duration	28805
+    2011-01-07 23:19:23	sleep:duration	8:00:05
 
 The `:duration` tag gets inserted automatically when a `:start` tag is closed with `:stop` tag.
 
@@ -57,15 +57,15 @@ Forgot to log your 1 hour workout this morning? Insert duration retroactively:
     $ clog --timestamp="today 11am" workout:duration 1 hour
     $ clog
     2011-01-07 11:00:00	workout:start	
-    2011-01-07 11:00:00	workout:duration	3599
+    2011-01-07 11:00:00	workout:duration	1:00:00
     2011-01-07 11:59:59	workout:stop
 
 ### Query
 
     $ clog --filter workout:duration
-    2011-01-07 11:00:00	workout:duration	3599
-    2011-01-06 09:00:00	workout:duration	7199
-    2011-01-04 12:00:00	workout:duration	5399
+    2011-01-07 11:00:00	workout:duration	1:00:00
+    2011-01-06 09:00:00	workout:duration	2:00:00
+    2011-01-04 12:00:00	workout:duration	1:30:00
 
     $ clog --filter food
     2011-01-04 09:00:00	food	Breakfast: cereal
