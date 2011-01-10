@@ -2,7 +2,7 @@ from clog.model.meta import Session, BaseModel
 from clog.model import types as mytypes
 
 from sqlalchemy import types, Column, Index, PrimaryKeyConstraint
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 
 __all__ = [
@@ -25,6 +25,10 @@ class Entry(BaseModel):
         if self.type:
             tagname += ':' + self.type
         timestamp = self.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+
+        if self.type == 'duration':
+            return "%s\t%s\t%s" % (timestamp, tagname, self.value and timedelta(seconds=int(self.value)))
+
         return "%s\t%s\t%s" % (timestamp, tagname, self.value or '')
 
 Index('entry_tag_idx',

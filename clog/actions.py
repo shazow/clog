@@ -1,10 +1,10 @@
 import sys
 
 import logging
-log = logging.getLogger(__name__)
+log = logging.getLogger('clog')
 
 from parsedatetime import parsedatetime, parsedatetime_consts
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from clog import model
 Session = model.Session
@@ -40,7 +40,7 @@ def add_entry(options, args):
     if options.pipe:
         value = sys.stdin.read()
 
-    if not tag_type or tag_type == 'start':
+    if tag_type != 'duration':
         e = model.Entry.create(timestamp=when, tag=tag, type=tag_type, value=value and unicode(value))
         if tag_type == 'start' and options.pipe:
             tag_type = 'stop' # Trigger duration insert later
@@ -48,7 +48,7 @@ def add_entry(options, args):
             e = model.Entry.create(timestamp=when, tag=tag, type=tag_type)
             Session.commit()
 
-    if tag_type == 'duration':
+    else:
         # Create corresponding :start and :stop entries based on where `when` is completion time
         # and `value` is duration.
 
@@ -58,8 +58,10 @@ def add_entry(options, args):
         delta = when_stop - now
         when_stop = when + delta
 
+        value = delta.seconds + delta.days*60*60*24
+
         e1 = model.Entry.create(timestamp=when, tag=tag, type='start')
-        e2 = model.Entry.create(timestamp=when, tag=tag, type='duration', value=unicode(delta.seconds))
+        e2 = model.Entry.create(timestamp=when, tag=tag, type='duration', value=unicode(value))
         e3 = model.Entry.create(timestamp=when_stop, tag=tag, type='stop')
 
     if tag_type == 'stop':
@@ -67,8 +69,9 @@ def add_entry(options, args):
         last_entry = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.id.desc()).first()
         if last_entry:
             time_delta = when-last_entry.timestamp
-            e = model.Entry.create(timestamp=last_entry.timestamp, tag=tag, type='duration', value=unicode(time_delta.seconds))
-            log.info("Stopped after %s seconds." % e.value)
+            value = time_delta.seconds + time_delta.days*60*60*24
+            e = model.Entry.create(timestamp=last_entry.timestamp, tag=tag, type='duration', value=unicode(value))
+            print "Duration recorded: %s" % timedelta(seconds=value)
 
     Session.commit()
 
@@ -106,7 +109,7 @@ def view_recent(options, args):
 
     r = q.order_by(model.Entry.id.desc()).limit(10).all()
     if not r:
-        log.info("No entries.")
+        print "No entries."
         return
 
     for entry in reversed(r):
