@@ -22,6 +22,7 @@ def human_time_to_datetime(s):
 
 
 def add_entry(options, args):
+    # TODO: Refactor this into more sensible pieces.
     when = datetime.now()
     if options.timestamp:
         when = human_time_to_datetime(options.timestamp)
@@ -36,6 +37,17 @@ def add_entry(options, args):
     if len(args) > 1:
         value = ' '.join(args[1:])
 
+    if options.pipe:
+        value = sys.stdin.read()
+
+    if not tag_type or tag_type == 'start':
+        e = model.Entry.create(timestamp=when, tag=tag, type=tag_type, value=value and unicode(value))
+        if tag_type == 'start' and options.pipe:
+            tag_type = 'stop' # Trigger duration insert later
+            when = datetime.now()
+            e = model.Entry.create(timestamp=when, tag=tag, type=tag_type)
+            Session.commit()
+
     if tag_type == 'duration':
         # Create corresponding :start and :stop entries based on where `when` is completion time
         # and `value` is duration.
@@ -49,15 +61,14 @@ def add_entry(options, args):
         e1 = model.Entry.create(timestamp=when, tag=tag, type='start')
         e2 = model.Entry.create(timestamp=when, tag=tag, type='duration', value=unicode(delta.seconds))
         e3 = model.Entry.create(timestamp=when_stop, tag=tag, type='stop')
-    else:
-        e = model.Entry.create(timestamp=when, tag=tag, type=tag_type, value=value and unicode(value))
 
     if tag_type == 'stop':
         # Find the last 'start' tag of that type
         last_entry = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.id.desc()).first()
         if last_entry:
             time_delta = when-last_entry.timestamp
-            model.Entry.create(timestamp=last_entry.timestamp, tag=tag, type='duration', value=unicode(time_delta.seconds))
+            e = model.Entry.create(timestamp=last_entry.timestamp, tag=tag, type='duration', value=unicode(time_delta.seconds))
+            log.info("Stopped after %s seconds." % e.value)
 
     Session.commit()
 
@@ -95,7 +106,7 @@ def view_recent(options, args):
 
     r = q.order_by(model.Entry.id.desc()).limit(10).all()
     if not r:
-        print "No entries."
+        log.info("No entries.")
         return
 
     for entry in reversed(r):
