@@ -31,6 +31,12 @@ Or
 
 ## Examples
 
+### Basic
+
+Track your eating:
+
+    $ clog food Lunch: Chipotle
+
 Track your sleep:
 
     $ clog sleep:start Feeling exhausted after shower.
@@ -44,6 +50,8 @@ Track your sleep:
 
 The `:duration` tag gets inserted automatically when a `:start` tag is closed with `:stop` tag.
 
+### Retroactive
+
 Forgot to log your 1 hour workout this morning? Insert duration retroactively:
 
     $ clog --timestamp="today 11am" workout:duration 1 hour
@@ -52,7 +60,7 @@ Forgot to log your 1 hour workout this morning? Insert duration retroactively:
     2011-01-07 11:00:00	workout:duration	3599
     2011-01-07 11:59:59	workout:stop
 
-Query your clog:
+### Query
 
     $ clog --filter workout:duration
     2011-01-07 11:00:00	workout:duration	3599
@@ -69,3 +77,23 @@ Query your clog:
     2011-01-06 11:00:00	food	Lunch: Indian
     2011-01-06 19:00:00	food	Dinner: Stew
 
+### Interactive
+
+Take notes during your clog progress interactively while clog waits:
+
+    $ cat | clog -p work:start
+    Clog
+    * Made :duration entry formatting more human-readable instead of raw seconds.
+    * Split action code into a separate module.
+    * Started thinking about an EntryGroup table ('group' branch).
+
+    <Ctrl-D>
+    Duration recorded: 0:45:04
+    $ clog
+    2011-01-09 23:44:21	work:start	Clog
+    * Made :duration entry formatting more human-readable instead of raw seconds.
+    * Split action code into a separate module.
+    * Started thinking about an EntryGroup table ('group' branch).
+
+    2011-01-10 00:29:25	work:stop	
+    2011-01-09 23:44:21	work:duration	0:45:04
