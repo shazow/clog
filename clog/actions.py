@@ -66,7 +66,7 @@ def add_entry(options, args):
 
     if tag_type == 'stop':
         # Find the last 'start' tag of that type
-        last_entry = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.id.desc()).first()
+        last_entry = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
         if last_entry:
             time_delta = when-last_entry.timestamp
             value = time_delta.seconds + time_delta.days*60*60*24
@@ -87,10 +87,20 @@ def export_json_entries(options, args):
 def import_json_entries(options, args):
     o = json.load(sys.stdin)
 
+    tag_id = None
     for entry_dict in o:
         entry_dict = dict((str(k), v) for k,v in entry_dict.iteritems())
         entry_dict['timestamp'] = datetime.strptime(entry_dict['timestamp'], '%Y-%m-%d %H:%M:%S')
+
+        if 'tag_id' not in entry_dict:
+            if not tag_id:
+                tag_id = model.random_id()
+            entry_dict['tag_id'] = tag_id
+
         model.Entry.create(**entry_dict)
+
+        if tag_id and entry_dict['type'] == 'stop':
+            tag_id = None
 
     Session.commit()
 
@@ -107,7 +117,7 @@ def view_recent(options, args):
         if tag_type:
             q = q.filter_by(type=tag_type)
 
-    r = q.order_by(model.Entry.id.desc()).limit(10).all()
+    r = q.order_by(model.Entry.timestamp.desc()).limit(10).all()
     if not r:
         print "No entries."
         return
