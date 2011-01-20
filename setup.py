@@ -12,7 +12,7 @@ long_description = open('README.md').read()
 
 setup(
     name = "clog",
-    version = "0.1",
+    version = "0.2",
     packages = find_packages(exclude=[]),
     include_package_data = True,
     description = "Command Log. Or Captain's Log.",
