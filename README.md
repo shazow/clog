@@ -9,7 +9,7 @@ Or
     easy_install https://github.com/shazow/clog/tarball/master
 
 
-Upgrading to a newer version? Read the [migration notes](blob/master/MIGRATION.md).
+Upgrading to a newer version? Read the [migration notes](https://github.com/shazow/clog/blob/master/MIGRATION.md).
 
 
 ## Usage
