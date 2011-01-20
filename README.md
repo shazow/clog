@@ -9,6 +9,9 @@ Or
     easy_install https://github.com/shazow/clog/tarball/master
 
 
+Upgrading to a newer version? Read the [MIGRATION](MIGRATION.md) notes.
+
+
 ## Usage
 
     Usage: clog [OPTIONS] [TAG [VALUE]]
