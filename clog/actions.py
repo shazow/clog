@@ -40,12 +40,14 @@ def add_entry(options, args):
     if options.pipe:
         value = sys.stdin.read()
 
+    tag_id = model.random_id()
+
     if tag_type != 'duration':
-        e = model.Entry.create(timestamp=when, tag=tag, type=tag_type, value=value and unicode(value))
+        e = model.Entry.create(timestamp=when, tag=tag, tag_id=tag_id, type=tag_type, value=value and unicode(value))
         if tag_type == 'start' and options.pipe:
             tag_type = 'stop' # Trigger duration insert later
             when = datetime.now()
-            e = model.Entry.create(timestamp=when, tag=tag, type=tag_type)
+            e = model.Entry.create(timestamp=when, tag=tag, tag_id=tag_id, type=tag_type)
             Session.commit()
 
     else:
@@ -60,9 +62,9 @@ def add_entry(options, args):
 
         value = delta.seconds + delta.days*60*60*24 + 1
 
-        e1 = model.Entry.create(timestamp=when, tag=tag, type='start')
-        e2 = model.Entry.create(timestamp=when, tag=tag, type='duration', value=unicode(value))
-        e3 = model.Entry.create(timestamp=when_stop, tag=tag, type='stop')
+        e1 = model.Entry.create(timestamp=when, tag=tag, tag_id=tag_id, type='start')
+        e2 = model.Entry.create(timestamp=when, tag=tag, tag_id=tag_id, type='duration', value=unicode(value))
+        e3 = model.Entry.create(timestamp=when_stop, tag=tag, tag_id=tag_id, type='stop')
 
     if tag_type == 'stop':
         # Find the last 'start' tag of that type
@@ -70,37 +72,29 @@ def add_entry(options, args):
         if last_entry:
             time_delta = when-last_entry.timestamp
             value = time_delta.seconds + time_delta.days*60*60*24
-            e = model.Entry.create(timestamp=last_entry.timestamp, tag=tag, type='duration', value=unicode(value))
+            e = model.Entry.create(timestamp=last_entry.timestamp, tag=tag, tag_id=last_entry.tag_id, type='duration', value=unicode(value))
             print "Duration recorded: %s" % timedelta(seconds=value)
 
     Session.commit()
 
 def export_json_entries(options, args):
     q = Session.query(model.Entry)
-    print "[",
-    for i, entry in enumerate(q):
-        if i>0:
-            print ",",
-        print entry.__json__(),
-    print "]"
+    r = [e.__export__() for e in q]
+    json.dump(r, sys.stdout)
+
 
 def import_json_entries(options, args):
     o = json.load(sys.stdin)
 
-    tag_id = None
+    tag_id = model.random_id()
     for entry_dict in o:
-        entry_dict = dict((str(k), v) for k,v in entry_dict.iteritems())
-        entry_dict['timestamp'] = datetime.strptime(entry_dict['timestamp'], '%Y-%m-%d %H:%M:%S')
-
         if 'tag_id' not in entry_dict:
-            if not tag_id:
-                tag_id = model.random_id()
-            entry_dict['tag_id'] = tag_id
+            entry_dict['tag_id'] = tag_id.encode('hex')
 
-        model.Entry.create(**entry_dict)
+        e = model.Entry.__import__(entry_dict)
 
-        if tag_id and entry_dict['type'] == 'stop':
-            tag_id = None
+        if tag_id and e.type == 'stop':
+            tag_id = model.random_id()
 
     Session.commit()
 
@@ -117,7 +111,7 @@ def view_recent(options, args):
         if tag_type:
             q = q.filter_by(type=tag_type)
 
-    r = q.order_by(model.Entry.timestamp.desc()).limit(10).all()
+    r = q.order_by(model.Entry.timestamp.desc()).all()
     if not r:
         print "No entries."
         return

@@ -38,6 +38,9 @@ class Entry(BaseModel):
 
     type = Column(mytypes.Enum(['start', 'stop', 'duration'], strict=False), nullable=True)
 
+    def create_followup(self, **kw):
+        return Entry.create(tag_id=self.tag_id, **kw)
+
     def __str__(self):
         tagname = self.tag
         if self.type:
