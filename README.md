@@ -85,7 +85,7 @@ Forgot to log your 1 hour workout this morning? Insert duration retroactively:
 Use the ``clogflow`` script for a complete clog-based note-taking and time-tracking workflow, or make your own scripts.
 
     $ clogflow --help
-    Usage: /Users/shazow/env/clog/bin/clogflow TAG [VALUE]
+    Usage: clogflow TAG [VALUE]
 
     Full :start to :stop workflow in a script.
     A :note is created per line, empty lines cause a :pause. <Ctrl-D> to finish
