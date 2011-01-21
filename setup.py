@@ -25,5 +25,5 @@ setup(
     entry_points="""
     # -*- Entry points: -*-
     """,
-    scripts=['bin/clog'],
+    scripts=['bin/clog', 'bin/clogflow'],
 )

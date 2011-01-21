@@ -14,11 +14,104 @@ try:
 except ImportError, e:
     import simplejson as json
 
+
 def human_time_to_datetime(s):
     const = parsedatetime_consts.Constants()
     cal = parsedatetime.Calendar(const)
     t, _ = cal.parse(s)
     return datetime(*t[:6])
+
+
+def _tag(when, tag, tag_id=None, type=None, value=None):
+    value = value and unicode(value)
+    tag_id = tag_id or model.random_id()
+    return model.Entry.create(timestamp=when, tag=tag, tag_id=tag_id, type=type, value=value and unicode(value))
+
+def tag_start(when, tag, tag_id=None, type=None, value=None):
+    return _tag(when=when, tag=tag, tag_id=tag_id, value=value, type='start')
+
+def tag_stop(when, tag, tag_id=None, type=None, value=None):
+    # FIXME: Rewrite this as one query
+    last_start = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
+    last_stop = Session.query(model.Entry).filter_by(tag=tag, type='stop').filter(model.Entry.timestamp > last_start.timestamp).first()
+    if not last_start or last_stop:
+        print "Couldn't find corresponding :start to end."
+        return
+
+    t = _tag(when=when, tag=tag, tag_id=last_start.tag_id, value=value, type='stop')
+
+    time_delta = when - last_start.timestamp
+
+    # Find all pause/resume types
+    q = Session.query(model.Entry).filter_by(tag=tag).filter(model.Entry.type.in_(['pause', 'resume']))
+    pauses = q.filter(model.Entry.timestamp > last_start.timestamp).order_by(model.Entry.timestamp.asc())
+
+    pause_delta = timedelta()
+    pause_count = 0
+    last_time = None
+    for p in pauses:
+        if p.type == 'pause':
+            last_time = p.timestamp
+            pause_count += 1
+        if p.type == 'resume' and last_time:
+            pause_delta += (p.timestamp - last_time)
+            last_time = None
+
+    time_delta -= pause_delta
+    value = time_delta.seconds + time_delta.days*60*60*24
+
+    e = _tag(when=last_start.timestamp, tag=tag, tag_id=last_start.tag_id, value=value, type='duration')
+
+    print "Duration recorded: %s" % time_delta
+    if pause_count:
+        print "Duration includes %d pauses spanning: %s" % (pause_count, pause_delta)
+
+
+def tag_duration(when, tag, tag_id=None, type=None, value=None):
+    now = datetime.now()
+    when_stop = human_time_to_datetime(value)
+    delta = when_stop - now
+    when_stop = when + delta
+
+    value = delta.seconds + delta.days*60*60*24 + 1
+
+    e1 = _tag(timestamp=when, tag=tag, type='start')
+    e2 = _tag(timestamp=when, tag=tag, tag_id=e1.tag_id, value=value, type='duration')
+    e3 = _tag(timestamp=when_stop, tag=tag, tag_id=e1.tag_id, type='stop')
+
+    return e2
+
+# FIXME: Get rid of repetitive code.
+
+def tag_pause(when, tag, tag_id=None, type=None, value=None):
+    last_start = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
+    if not last_start:
+        print "Could not find corresponding :start"
+
+    return _tag(when=when, tag=tag, tag_id=last_start.tag_id, value=value, type='pause')
+
+def tag_resume(when, tag, tag_id=None, type=None, value=None):
+    last_start = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
+    if not last_start:
+        print "Could not find corresponding :start"
+
+    return _tag(when=when, tag=tag, tag_id=last_start.tag_id, value=value, type='resume')
+
+def tag_tag(when, tag, tag_id=None, type=None, value=None):
+    last_start = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
+    if not last_start:
+        print "Could not find corresponding :start"
+
+    # TODO: Add some sort of tag lookup table? Or a generic key-value metadata one?
+    return _tag(when=when, tag=tag, tag_id=last_start.tag_id, value=value, type='tag')
+
+def tag_note(when, tag, tag_id=None, type=None, value=None):
+    last_start = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
+    if not last_start:
+        print "Could not find corresponding :start"
+
+    return _tag(when=when, tag=tag, tag_id=tag_id, value=value, type='note')
+
 
 
 def add_entry(options, args):
@@ -42,38 +135,17 @@ def add_entry(options, args):
 
     tag_id = model.random_id()
 
-    if tag_type != 'duration':
-        e = model.Entry.create(timestamp=when, tag=tag, tag_id=tag_id, type=tag_type, value=value and unicode(value))
-        if tag_type == 'start' and options.pipe:
-            tag_type = 'stop' # Trigger duration insert later
-            when = datetime.now()
-            e = model.Entry.create(timestamp=when, tag=tag, tag_id=tag_id, type=tag_type)
-            Session.commit()
+    fn = {
+        'start': tag_start,
+        'stop': tag_stop,
+        'duration': tag_duration,
+        'pause': tag_pause,
+        'resume': tag_resume,
+        'note': tag_note,
+        None: _tag,
+    }
 
-    else:
-        # Create corresponding :start and :stop entries based on where `when` is completion time
-        # and `value` is duration.
-
-        # Normalize relative times
-        now = datetime.now()
-        when_stop = human_time_to_datetime(value)
-        delta = when_stop - now
-        when_stop = when + delta
-
-        value = delta.seconds + delta.days*60*60*24 + 1
-
-        e1 = model.Entry.create(timestamp=when, tag=tag, tag_id=tag_id, type='start')
-        e2 = model.Entry.create(timestamp=when, tag=tag, tag_id=tag_id, type='duration', value=unicode(value))
-        e3 = model.Entry.create(timestamp=when_stop, tag=tag, tag_id=tag_id, type='stop')
-
-    if tag_type == 'stop':
-        # Find the last 'start' tag of that type
-        last_entry = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
-        if last_entry:
-            time_delta = when-last_entry.timestamp
-            value = time_delta.seconds + time_delta.days*60*60*24
-            e = model.Entry.create(timestamp=last_entry.timestamp, tag=tag, tag_id=last_entry.tag_id, type='duration', value=unicode(value))
-            print "Duration recorded: %s" % timedelta(seconds=value)
+    fn[tag_type](when=when, tag=tag, tag_id=tag_id, value=value)
 
     Session.commit()
 

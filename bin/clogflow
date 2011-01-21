@@ -1,0 +1,42 @@
+#!/bin/bash
+
+function usage() {
+    echo "Usage: $0 TAG [VALUE]";
+    echo "";
+    echo "Full :start to :stop workflow in a script.";
+    echo "A :note is created per line, empty lines cause a :pause. <Ctrl-D> to finish.";
+}
+
+tag="$1";
+value="$2";
+
+if [ ! "$tag" -o "$tag" == "--help" -o "$tag" == "-h" ]; then
+    usage;
+    exit 1;
+fi
+
+clog ${tag}:start ${value}
+
+echo -n "> ";
+
+is_paused="";
+while read i; do
+    if [ "$is_paused" ]; then
+        echo "(Resumed)"
+        echo -n "> ";
+        clog ${tag}:resume
+        is_paused="";
+    elif [ ! "$i" ]; then
+        echo -n "(Paused)"
+        is_paused="1";
+        clog ${tag}:pause
+    fi
+    if [ "$i" ]; then
+        clog ${tag}:note "$i"
+        echo -n "> ";
+    fi
+done
+
+echo "\n(Calculating duration)"
+
+clog ${tag}:stop

@@ -80,23 +80,34 @@ Forgot to log your 1 hour workout this morning? Insert duration retroactively:
     2011-01-06 11:00:00	food	Lunch: Indian
     2011-01-06 19:00:00	food	Dinner: Stew
 
-### Interactive
+### Full workflow
 
-Take notes during your clog progress interactively while clog waits:
+Use the ``clogflow`` script for a complete clog-based note-taking and time-tracking workflow, or make your own scripts.
 
-    $ cat | clog -p work:start
-    Clog
-    * Made :duration entry formatting more human-readable instead of raw seconds.
-    * Split action code into a separate module.
-    * Started thinking about an EntryGroup table ('group' branch).
+    $ clogflow --help
+    Usage: /Users/shazow/env/clog/bin/clogflow TAG [VALUE]
 
-    <Ctrl-D>
-    Duration recorded: 0:45:04
+    Full :start to :stop workflow in a script.
+    A :note is created per line, empty lines cause a :pause. <Ctrl-D> to finish
+
+    $ clogflow work Clogging
+    > Adding clogflow script
+    > Testing clogflow
+    > 
+    (Paused)
+    (Resumed)
+    > Testing pausing, looks like it works.
+    > ^D
+    (Calculating duration)
+    Duration recorded: 0:30:25.027582
+    Duration includes 1 pauses spanning: 0:00:06.157021
+
     $ clog
-    2011-01-09 23:44:21	work:start	Clog
-    * Made :duration entry formatting more human-readable instead of raw seconds.
-    * Split action code into a separate module.
-    * Started thinking about an EntryGroup table ('group' branch).
-
-    2011-01-10 00:29:25	work:stop	
-    2011-01-09 23:44:21	work:duration	0:45:04
+    2011-01-20 23:07:08	work:start	Clogging
+    2011-01-20 23:07:08	work:duration	0:30:25
+    2011-01-20 23:12:17	work:note	Adding clogflow script
+    2011-01-20 23:29:23	work:note	Testing clogflow
+    2011-01-20 23:37:25	work:pause	
+    2011-01-20 23:37:31	work:resume	
+    2011-01-20 23:37:38	work:note	Testing pausing, looks like it works.
+    2011-01-20 23:37:39	work:stop

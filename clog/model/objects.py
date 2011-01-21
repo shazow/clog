@@ -36,7 +36,7 @@ class Entry(BaseModel):
 
     value = Column(types.UnicodeText)
 
-    type = Column(mytypes.Enum(['start', 'stop', 'duration'], strict=False), nullable=True)
+    type = Column(mytypes.Enum(['start', 'stop', 'duration', 'pause', 'resume', 'note', 'tag'], strict=False), nullable=True)
 
     def create_followup(self, **kw):
         return Entry.create(tag_id=self.tag_id, **kw)
