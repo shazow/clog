@@ -23,7 +23,7 @@ convert_types = {
     ),
     types.Date: (
         lambda o: o.strftime('%Y-%m-%d'),
-        lambda s: date.strptime(s, '%Y-%m-%d')
+        lambda s: datetime.strptime(s, '%Y-%m-%d').date()
     ),
 }
 
