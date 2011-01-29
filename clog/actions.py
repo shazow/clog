@@ -76,10 +76,10 @@ def tag_duration(when, tag, tag_id=None, type=None, value=None):
     value = delta.seconds + delta.days*60*60*24 + 1
 
     e1 = _tag(timestamp=when, tag=tag, type='start')
-    e2 = _tag(timestamp=when, tag=tag, tag_id=e1.tag_id, value=value, type='duration')
-    e3 = _tag(timestamp=when_stop, tag=tag, tag_id=e1.tag_id, type='stop')
+    e2 = _tag(timestamp=when_stop, tag=tag, tag_id=e1.tag_id, type='stop')
+    e3 = _tag(timestamp=when_stop, tag=tag, tag_id=e1.tag_id, value=value, type='duration')
 
-    return e2
+    return e3
 
 # FIXME: Get rid of repetitive code.
 
