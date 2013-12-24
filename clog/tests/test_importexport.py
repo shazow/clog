@@ -6,25 +6,28 @@ RANDOM_ID = 'ffffffffffffffff'
 
 FIXTURES = [
     {
-        'timestamp': u'2011-01-20 19:00:01',
-        'tag': u'foo',
-        'tag_id': RANDOM_ID,
+        'id': '0000000000000001',
+        'timestamp': '2011-01-20 19:00:01',
+        'tag': 'foo',
+        'session_id': RANDOM_ID,
         'value': None,
-        'type': u'start',
+        'type': 'start',
     },
     {
-        'timestamp': u'2011-01-20 19:00:02',
-        'tag': u'foo',
-        'tag_id': RANDOM_ID,
+        'id': '0000000000000002',
+        'timestamp': '2011-01-20 19:00:02',
+        'tag': 'foo',
+        'session_id': RANDOM_ID,
         'value': None,
-        'type': u'stop',
+        'type': 'stop',
     },
     {
-        'timestamp': u'2011-01-20 19:00:01',
-        'tag': u'foo',
-        'tag_id': RANDOM_ID,
+        'id': '0000000000000003',
+        'timestamp': '2011-01-20 19:00:01',
+        'tag': 'foo',
+        'session_id': RANDOM_ID,
         'value': u'1',
-        'type': u'duration',
+        'type': 'duration',
     },
 ]
 FIXTURES.sort()

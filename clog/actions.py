@@ -22,15 +22,15 @@ def human_time_to_datetime(s):
     return datetime(*t[:6])
 
 
-def _tag(when, tag, tag_id=None, type=None, value=None):
+def _tag(when, tag, session_id=None, type=None, value=None):
     value = value and unicode(value)
-    tag_id = tag_id or model.random_id()
-    return model.Entry.create(timestamp=when, tag=tag, tag_id=tag_id, type=type, value=value and unicode(value))
+    session_id = session_id or model.random_id()
+    return model.Entry.create(timestamp=when, tag=tag, session_id=session_id, type=type, value=value and unicode(value))
 
-def tag_start(when, tag, tag_id=None, type=None, value=None):
-    return _tag(when=when, tag=tag, tag_id=tag_id, value=value, type='start')
+def tag_start(when, tag, session_id=None, type=None, value=None):
+    return _tag(when=when, tag=tag, session_id=session_id, value=value, type='start')
 
-def tag_stop(when, tag, tag_id=None, type=None, value=None):
+def tag_stop(when, tag, session_id=None, type=None, value=None):
     # FIXME: Rewrite this as one query
     last_start = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
     last_stop = Session.query(model.Entry).filter_by(tag=tag, type='stop').filter(model.Entry.timestamp > last_start.timestamp).first()
@@ -38,7 +38,7 @@ def tag_stop(when, tag, tag_id=None, type=None, value=None):
         print "Couldn't find corresponding :start to end."
         return
 
-    t = _tag(when=when, tag=tag, tag_id=last_start.tag_id, value=value, type='stop')
+    t = _tag(when=when, tag=tag, session_id=last_start.session_id, value=value, type='stop')
 
     time_delta = when - last_start.timestamp
 
@@ -60,14 +60,14 @@ def tag_stop(when, tag, tag_id=None, type=None, value=None):
     time_delta -= pause_delta
     value = time_delta.seconds + time_delta.days*60*60*24
 
-    e = _tag(when=last_start.timestamp, tag=tag, tag_id=last_start.tag_id, value=value, type='duration')
+    e = _tag(when=last_start.timestamp, tag=tag, session_id=last_start.session_id, value=value, type='duration')
 
     print "Duration recorded: %s" % time_delta
     if pause_count:
         print "Duration includes %d pauses spanning: %s" % (pause_count, pause_delta)
 
 
-def tag_duration(when, tag, tag_id=None, type=None, value=None):
+def tag_duration(when, tag, session_id=None, type=None, value=None):
     now = datetime.now()
     when_stop = human_time_to_datetime(value)
     delta = when_stop - now
@@ -76,41 +76,41 @@ def tag_duration(when, tag, tag_id=None, type=None, value=None):
     value = delta.seconds + delta.days*60*60*24 + 1
 
     e1 = _tag(timestamp=when, tag=tag, type='start')
-    e2 = _tag(timestamp=when_stop, tag=tag, tag_id=e1.tag_id, type='stop')
-    e3 = _tag(timestamp=when_stop, tag=tag, tag_id=e1.tag_id, value=value, type='duration')
+    e2 = _tag(timestamp=when_stop, tag=tag, session_id=e1.session_id, type='stop')
+    e3 = _tag(timestamp=when_stop, tag=tag, session_id=e1.session_id, value=value, type='duration')
 
     return e3
 
 # FIXME: Get rid of repetitive code.
 
-def tag_pause(when, tag, tag_id=None, type=None, value=None):
+def tag_pause(when, tag, session_id=None, type=None, value=None):
     last_start = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
     if not last_start:
         print "Could not find corresponding :start"
 
-    return _tag(when=when, tag=tag, tag_id=last_start.tag_id, value=value, type='pause')
+    return _tag(when=when, tag=tag, session_id=last_start.session_id, value=value, type='pause')
 
-def tag_resume(when, tag, tag_id=None, type=None, value=None):
+def tag_resume(when, tag, session_id=None, type=None, value=None):
     last_start = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
     if not last_start:
         print "Could not find corresponding :start"
 
-    return _tag(when=when, tag=tag, tag_id=last_start.tag_id, value=value, type='resume')
+    return _tag(when=when, tag=tag, session_id=last_start.session_id, value=value, type='resume')
 
-def tag_tag(when, tag, tag_id=None, type=None, value=None):
+def tag_tag(when, tag, session_id=None, type=None, value=None):
     last_start = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
     if not last_start:
         print "Could not find corresponding :start"
 
     # TODO: Add some sort of tag lookup table? Or a generic key-value metadata one?
-    return _tag(when=when, tag=tag, tag_id=last_start.tag_id, value=value, type='tag')
+    return _tag(when=when, tag=tag, session_id=last_start.session_id, value=value, type='tag')
 
-def tag_note(when, tag, tag_id=None, type=None, value=None):
+def tag_note(when, tag, session_id=None, type=None, value=None):
     last_start = Session.query(model.Entry).filter_by(tag=tag, type='start').order_by(model.Entry.timestamp.desc()).first()
     if not last_start:
         print "Could not find corresponding :start"
 
-    return _tag(when=when, tag=tag, tag_id=tag_id, value=value, type='note')
+    return _tag(when=when, tag=tag, session_id=session_id, value=value, type='note')
 
 
 
@@ -133,7 +133,7 @@ def add_entry(options, args):
     if options.pipe:
         value = sys.stdin.read()
 
-    tag_id = model.random_id()
+    session_id = model.random_id()
 
     fn = {
         'start': tag_start,
@@ -145,7 +145,7 @@ def add_entry(options, args):
         None: _tag,
     }
 
-    fn[tag_type](when=when, tag=tag, tag_id=tag_id, value=value)
+    fn[tag_type](when=when, tag=tag, session_id=session_id, value=value)
 
     Session.commit()
 
@@ -158,15 +158,15 @@ def export_json_entries(options, args):
 def import_json_entries(options, args):
     o = json.load(sys.stdin)
 
-    tag_id = model.random_id()
+    session_id = model.random_id()
     for entry_dict in o:
-        if 'tag_id' not in entry_dict:
-            entry_dict['tag_id'] = tag_id.encode('hex')
+        if 'session_id' not in entry_dict:
+            entry_dict['session_id'] = session_id.encode('hex')
 
         e = model.Entry.__import__(entry_dict)
 
-        if tag_id and e.type == 'stop':
-            tag_id = model.random_id()
+        if session_id and e.type == 'stop':
+            session_id = model.random_id()
 
     Session.commit()
 
