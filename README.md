@@ -24,6 +24,9 @@ Upgrading to a newer version? Read the [migration notes](https://github.com/shaz
       --export-json         Export data into a list of JSON objects to STDOUT.
       --import-json         Import data from a list of JSON objects from STDIN.
       --filter=TAG          Filter clog entries by tag.
+      --session=SESSION     Explicitly provide a session for this entry. If
+                            empty is provided, then a new session is created
+                            even if there is an incomplete active session.
       -v, --verbose         Enable verbose output. Use twice to enable debug
                             output.
 
