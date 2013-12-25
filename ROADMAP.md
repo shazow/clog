@@ -31,9 +31,11 @@ Build a web frontend that visualizes data from your logs, with good import/expor
 
 * Track of relationships with people and objects through entities.
 
-    $ clog entity:person batman
-    $ clog entity:person Andrey Petrov
-    $ clog entity:alias shazow -> Andrey Petrov
+  ```bash
+  $ clog entity:person batman
+  $ clog entity:person Andrey Petrov
+  $ clog entity:alias shazow -> Andrey Petrov
+  ```
 
   An alias table will keep track of aliases for fast lookup of entities which
   are also stored as normal clog entries. An `entity:create` command will create
@@ -41,12 +43,14 @@ Build a web frontend that visualizes data from your logs, with good import/expor
 
 * Track attendance for locations.
 
-    $ clog entity:place gym
-
-    $ clog visit:start gym
-    $ clog visit:with batman
-    $ clog visit:with robin
-    $ clog visit:stop
+  ```bash
+  $ clog entity:place gym
+  ...
+  $ clog visit:start gym
+  $ clog visit:with batman
+  $ clog visit:with robin
+  $ clog visit:stop
+  ```
 
   Referencing an undefined entity will implicitly create it.
 
@@ -55,34 +59,38 @@ Build a web frontend that visualizes data from your logs, with good import/expor
 
   Amend to a previously stopped session:
 
-    $ clog --session="gym" workout 20x5 squats
+  ```bash
+  $ clog --session="gym" workout 20x5 squats
+  ```
 
 * Track expenses between parties and across sessions.
 
-    $ clog expense:start Cabin trip
-    $ clog expense:with batman
-    $ clog expense:with robin
-    $ clog expense:add batman $200 Food and drinks
-    $ clog expense:add me $100 Gas
-    $ clog expense:stop
+  ```bash
+  $ clog expense:start Cabin trip
+  $ clog expense:with batman
+  $ clog expense:with robin
+  $ clog expense:add batman $200 Food and drinks
+  $ clog expense:add me $100 Gas
+  $ clog expense:stop
 
-    $ clog --session="Cabin trip" expense:balance
-    Expenses recorded over 2 entries spanning 4 days: $300.00
-    Average expense per person: $100.00
+  $ clog --session="Cabin trip" expense:balance
+  Expenses recorded over 2 entries spanning 4 days: $300.00
+  Average expense per person: $100.00
 
-    Person | Session Balance
-    -------+----------------
-    me     |        +$100.00
-    batman |           $0.00
-    robin  |        -$100.00
+  Person | Session Balance
+  -------+----------------
+  me     |        +$100.00
+  batman |           $0.00
+  robin  |        -$100.00
 
-    $ clog expense:balance
-    Your outstanding balance with 1 other person: +$100.00
+  $ clog expense:balance
+  Your outstanding balance with 1 other person: +$100.00
 
-    Person |         Balance
-    -------+----------------
-    robin  |        -$100.00
+  Person |         Balance
+  -------+----------------
+  robin  |        -$100.00
 
-    $ clog expense:move robin me $100
-    $ clog expense:balance
-    No outstanding balance.
+  $ clog expense:move robin me $100
+  $ clog expense:balance
+  No outstanding balance.
+  ```
