@@ -4,23 +4,27 @@
 
 * Build a simple command-line tool for logging things.
 
-      Usage: clog [OPTIONS] TAG [VALUE]
+  ```
+  Usage: clog [OPTIONS] TAG [VALUE]
 
-      OPTIONS include:
-      --timestamp TIME    Can be an ISO timestamp, or relative human time.
+  OPTIONS include:
+  --timestamp TIME    Can be an ISO timestamp, or relative human time.
+  ```
 
 Each time you enter a clog, it generates a timestamped entry in the database.
 
 * Tag hooks
 
-      At 1am:
-      $ clog sleep:start Feeling exhausted
+  ```
+  At 1am:
+  $ clog sleep:start Feeling exhausted
 
-      At 9am
-      $ clog sleep:stop
+  At 9am
+  $ clog sleep:stop
 
-      Hook generates entry equivalent of
-      $ clog --timestamp "8 hours ago" sleep
+  Hook generates entry equivalent of
+  $ clog --timestamp "8 hours ago" sleep
+  ```
 
 ## 2. Web Frontend (Not started)
 
@@ -31,7 +35,7 @@ Build a web frontend that visualizes data from your logs, with good import/expor
 
 * Track of relationships with people and objects through entities.
 
-  ```bash
+  ```
   $ clog entity:person batman
   $ clog entity:person Andrey Petrov
   $ clog entity:alias shazow -> Andrey Petrov
@@ -43,7 +47,7 @@ Build a web frontend that visualizes data from your logs, with good import/expor
 
 * Track attendance for locations.
 
-  ```bash
+  ```
   $ clog entity:place gym
   ...
   $ clog visit:start gym
@@ -59,13 +63,13 @@ Build a web frontend that visualizes data from your logs, with good import/expor
 
   Amend to a previously stopped session:
 
-  ```bash
+  ```
   $ clog --session="gym" workout 20x5 squats
   ```
 
 * Track expenses between parties and across sessions.
 
-  ```bash
+  ```
   $ clog expense:start Cabin trip
   $ clog expense:with batman
   $ clog expense:with robin
