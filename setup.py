@@ -17,7 +17,7 @@ setup(
     include_package_data = True,
     description = "Command Log. Or Captain's Log.",
     long_description = long_description,
-    install_requires = ['sqlalchemy','parsedatetime'],
+    install_requires = ['sqlalchemy','parsedatetime','unstdlib'],
     author = "Andrey Petrov",
     author_email = "andrey.petrov@shazow.net",
     url = "http://github.com/shazow/clog",

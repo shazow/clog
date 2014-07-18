@@ -1,0 +1,3 @@
+SQLAlchemy==0.9.6
+parsedatetime==1.4
+unstdlib==1.7

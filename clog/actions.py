@@ -3,7 +3,7 @@ import sys
 import logging
 log = logging.getLogger('clog')
 
-from parsedatetime import parsedatetime, parsedatetime_consts
+from parsedatetime import Calendar
 from datetime import datetime, timedelta
 
 from clog import model
@@ -16,8 +16,7 @@ except ImportError, e:
 
 
 def human_time_to_datetime(s):
-    const = parsedatetime_consts.Constants()
-    cal = parsedatetime.Calendar(const)
+    cal = Calendar()
     t, _ = cal.parse(s)
     return datetime(*t[:6])
 

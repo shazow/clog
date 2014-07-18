@@ -1,4 +1,12 @@
 from sqlalchemy import types
+from unstdlib import iterate
+
+def iterate_index(v):
+    if isinstance(v, dict):
+        return v.iteritems()
+
+    return ((i+1, v) for i, v in enumerate(v))
+
 
 class Enum(types.TypeDecorator):
     impl = types.Integer
@@ -16,33 +24,37 @@ class Enum(types.TypeDecorator):
 
         self.strict = strict
 
-        if isinstance(value_map, list):
-            value_map = dict((k+1,v) for k,v in enumerate(value_map))
+        self.id_names = {}
+        self.name_labels = {}
+        self.name_ids = {}
 
-        # Enum lookup indices
-        self.id_lookup = value_map
-        self.name_lookup = dict((v,k) for k,v in value_map.iteritems())
+        for id, v in iterate_index(value_map):
+            v = iterate(v)
+            name, label = v[0], v[-1]
+            self.id_names[id] = name
+            self.name_labels[name] = label
+            self.name_ids[name] = id
 
-        super(Enum, self).__init__(self, *args, **kw)
+        super(Enum, self).__init__()
 
     def process_bind_param(self, value, dialect):
-        if not value:
+        if value is None:
             return
 
-        id = self.name_lookup.get(value)
+        id = self.name_ids.get(value)
         if not id:
-            raise AssertionError("Name '{0}' is not one of: {1}".format(value, self.name_lookup.keys()))
+            raise AssertionError("Name '{0}' is not one of: {1}".format(value, self.name_ids.keys()))
         return id
 
     def process_result_value(self, value, dialect):
-        if not value:
+        if value is None:
             return
 
-        name = self.id_lookup.get(value)
+        name = self.id_names.get(value)
         if self.strict and not name:
-            raise AssertionError("Id '{0}' is not one of: {1}".format(value, self.id_lookup.keys()))
+            raise AssertionError("Id '{0}' is not one of: {1}".format(value, self.id_names.keys()))
         return name
 
     def copy_value(self, value):
         "Convert named value to internal id representation"
-        return self.name_lookup.get(value)
+        return self.name_ids.get(value)
