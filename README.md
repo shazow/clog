@@ -129,6 +129,40 @@ for a new plugin:
        -> Saved XXXX/YYYY: person:debt
 
 
+## Implementation thoughts
+
+- Would be neat if the objects could be stored in a git-based database.
+  - Otherwise, it could be stored in any ordered KV database, like LevelDB.
+- JSON streams make it easy to build web clients and client-side plugins.
+- What happens when two plugins conflict on emitted type namespaces? (Probably not important)
+- Would be handy to have a clog-index which assists in generating an index for
+  some value (e.g. for lookups of sessions, graph relationships, etc).
+
+### clog-index
+
+Not sure if this is a great idea, it would probably be better if plugins
+maintained their own indices. But just for fun:
+
+    $ clog-dump | clog-index --field=session session.idx
+    Indexed 42 entries by session.
+
+    $ clog-query session.idx "AAAA"
+    ... [all entries in session AAAA, sorted logn lookup]
+
+    $ clog-dump | clog-index person:mention --create mention.idx
+    Indexed 123 person:mention entries, top instances:
+    100   @foo
+    20    @bar
+    3     @baz
+
+    $ clog-query mention.idx "@bar" --session tweet
+    ... [all tweet entries that mention @bar, sorted logn lookup]
+
+Commonly used clog indices would be defined in the config file such that they're
+updated on the fly with clog-save. Plugins should be able to define their own
+indices.
+
+
 ## Recap of v1
 
 ### Basic
