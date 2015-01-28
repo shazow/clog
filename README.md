@@ -1,8 +1,36 @@
+*[Brainstorming branch for v2 of clog.]*
+
 # clog
 
-Brainstorming branch for v2 of clog.
+Captain's Log.
 
-## Storage
+clog is a way to unite events we emit by hand with events emitted
+programmatically by various services in our lives, allowing us to harness how
+they relate to each other.
+
+Think of it like a journal that you collaborate on with your computer.
+
+Design goals:
+
+1. Simple yet powerful data structure that can be easily implemented by many
+   applications which will emit and consume these kinds of events to build a strong
+   ecosystem.
+2. Clog should be federated and encourage security-conscious storage and sharing
+   by design.
+3. Entries are immutable and stateless. Their keys depend on their contents, so
+   they can't be modified in-place. Deletes could be handled by a plugin, but not
+   part of the core design. If state is required for some functionality, it
+   should be derived from the stream of stateless entries (and optionally
+   maintained) by the app or plugin that needs it.
+4. Plugins are completely optional. A node with zero plugins is still useful, as
+   it can archive and possibly relay entries to another node that could do other
+   things with them, like run plugins. Given a dump of entries, a plugin should
+   aim to produce the same final state regardless of the dump's ordering. There
+   is no guarantee which node will produce which entries and in which order
+   they'll be relayed.
+
+
+## Datastructure
 
 Blobs of events, keyed by {timestamp, HASH}. HASH is the sha256 of the
 concatenated values of {user, timestamp, session, type, action, value}.
@@ -14,7 +42,7 @@ concatenated values of {user, timestamp, session, type, action, value}.
         type: [string],         // eat, sleep, exercise, alias, ...
         action: [string],       // (Optional) Modifier on type: start, stop, duration, pause, resume, note, tag, person, place, ...
         value: [string],        // A label, notes, or some parsed value
-        metadata: [object],     // (Optional) user agent, debugging info, ...
+        metadata: [object],     // (Optional) user agent, debugging info, ... - not necessarily relayed
     }
 
 Example:
