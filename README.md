@@ -4,16 +4,17 @@ Brainstorming branch for v2 of clog.
 
 ## Storage
 
-Blobs of events, keyed by {TIMESTAMP}-{HASH}. Hash is the hash of the
-concatenated values of {timestamp, session, type, action, value}.
+Blobs of events, keyed by {timestamp, HASH}. HASH is the sha256 of the
+concatenated values of {user, timestamp, session, type, action, value}.
 
     {
-        timestamp: [datetime],
-        session: [string], // (Optional) key of the origin entry
-        type: [string], // eat, sleep, exercise, alias, ...
-        action: [string], // (Optional) Modifier on type: start, stop, duration, pause, resume, note, tag, person, place, ...
-        value: [string], // A label, notes, or some parsed value
-        metadata: [object], // (Optional) user agent, debugging info, ...
+        user: [string],         // key of origin "person" entry [default: origin user]
+        timestamp: [datetime],  // Timestamp of when the event was created [default: now]
+        session: [string],      // (Optional) key of the origin entry
+        type: [string],         // eat, sleep, exercise, alias, ...
+        action: [string],       // (Optional) Modifier on type: start, stop, duration, pause, resume, note, tag, person, place, ...
+        value: [string],        // A label, notes, or some parsed value
+        metadata: [object],     // (Optional) user agent, debugging info, ...
     }
 
 Example:
@@ -53,7 +54,134 @@ based on metadata filters. Device nodes could choose to maintain only a subset
 of archival data, such as the last 30 days.
 
 
+## Users & Sharing
+
+Each clog database starts with an "origin" person entry. This is the default
+user for this clog. It differs from other entries in that it does not have a
+user field.
+
+    {   // Key: 1234
+        timestamp: 1421871634,
+        type: "person"
+    }
+
+Users can have unlimited aliases that we refer to them by. This is purely for
+our own convenience, it does not need to correlate to public identifiers.
+
+    {
+        user: "1234",
+        type: "person",
+        action: "alias",
+        value: "shazow",
+    }
+
+We should also link social and cryptographic identities to users, perhaps import
+from keybase.io or similar:
+
+    {
+        user: "1234",
+        type: "person",
+        action: "auth",
+        value: "ssh-rsa AAAAB3Nz....bskD",
+    }
+    {
+        user: "1234",
+        type: "person",
+        action: "twitter",
+        value: "shazow",
+    }
+
+Now we can safely associate signed or Twitter messages to the correct person
+entry, even if our internal alias differs.
+
+A mention plugin can monitor @mentions and create corresponding person entries
+for them if they don't exist, and track these mentions for future analysis (see
+clog-plugin-mention example below).
+
+Share mechanics can be implemented using a "share" or "assign" action, for example.
+
+
+    {   // Key: AAAA
+        user: "1234",
+        type: "todo",
+        value: "Give feedback on clog v2",
+    },
+    {
+        user: "1234"
+        session: "AAAA",
+        type: "todo",
+        action: "assign",
+        value: "hyfen"
+    }
+
+A clog-plugin-share plugin might allow @hyfen to get access to the entire AAAA
+session and synchronize state between @hyfen and @shazow. When plugins detect a
+new person, they create a corresponding person with an alias to it.
+
+    {   // Key: 2345
+        user: "1234",
+        type: "person",
+    },
+    {
+        user: "1234",
+        session: "2345",
+        type: "person",
+        action: "alias",
+        value: "hyfen",
+    }
+
+Perhaps we've specified a remote for us to push events to for hyfen:
+
+    {
+        session: "AAAA"
+        type: "person",
+        action: "remote",
+        value: "https://clog.hyfen.net",
+    }
+
+In this case, our clog could push events directly to @hyfen's database where
+they will be held in a staging namespace until @hyfen chooses to adopt the
+entries into his own database.
+
+Later @hyfen might push back:
+
+    {
+        user: "2345"
+        timestamp: 1421871634,
+        session: "AAAA",
+        type: "todo",
+        action: "done",
+    },
+    {
+        user: "2345"
+        timestamp: 1421871634,
+        session: "AAAA",
+        type: "todo",
+        action: "note",
+        value: "Looks good!",
+    }
+
+We're hand-waving a lot of important auth negotiation details which might be
+tricky to do with non-trusted parties. You could look at the established
+auth/social links and have the other party authenticate against those. Every
+send should be, of course, encrypted for the destination reader. Perhaps pushes
+should only be allowed if an auth public key has been specified?
+
+It's important to keep in mind that ultimately we're just passing around these
+structured blobs. There is no obligation to merge them, or run them through any
+specific plugin. It's up to you what you do with them.
+
+Some plugins could require specific signing and database state to permit the
+merging, or perhaps they keep a whitelist and piggyback on other credentials
+(client cert or ssh keys?), or perhaps they just relay to another archival node
+that deals with it.
+
+
 ## Commandline
+
+A sketch of what a Unix-y command line tool suite might look like. It would make
+just as much sense to have an all-in-one daemon running, but it's good to
+imagine how the responsibilities might be broken up using command-line tools.
 
     $ clog sleep:start
     {
